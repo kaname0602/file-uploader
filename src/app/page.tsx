@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { upload } from "@vercel/blob/client";
 import "./globals.css";
 
 interface FileInfo {
@@ -43,25 +44,31 @@ export default function Home() {
     setUploading(true);
     setMessage(null);
 
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-    formData.append("filename", customName);
-
     try {
-      const res = await fetch("/api/files", { method: "POST", body: formData });
-      const data = await res.json();
-
-      if (res.ok) {
-        setMessage({ text: data.message, type: "success" });
-        setSelectedFile(null);
-        setCustomName("");
-        // ファイル入力をリセット
-        const fileInput = document.getElementById("file-input") as HTMLInputElement;
-        if (fileInput) fileInput.value = "";
-        fetchFiles();
+      // ファイル名を決定
+      const originalExt = selectedFile.name.includes(".")
+        ? "." + selectedFile.name.split(".").pop()
+        : "";
+      let fileName: string;
+      if (customName && customName.trim()) {
+        const hasExt = customName.trim().includes(".");
+        fileName = hasExt ? customName.trim() : customName.trim() + originalExt;
       } else {
-        setMessage({ text: data.error, type: "error" });
+        fileName = selectedFile.name;
       }
+
+      // Vercel Blobにクライアントから直接アップロード
+      await upload(fileName, selectedFile, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+      });
+
+      setMessage({ text: `「${fileName}」をアップロードしました`, type: "success" });
+      setSelectedFile(null);
+      setCustomName("");
+      const fileInput = document.getElementById("file-input") as HTMLInputElement;
+      if (fileInput) fileInput.value = "";
+      fetchFiles();
     } catch {
       setMessage({ text: "アップロードに失敗しました", type: "error" });
     } finally {
