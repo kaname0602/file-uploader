@@ -8,14 +8,14 @@ export async function POST(request: NextRequest) {
     const jsonResponse = await handleUpload({
       body,
       request,
-      onBeforeGenerateToken: async (pathname) => {
+      onBeforeGenerateToken: async () => {
         return {
-          allowedContentTypes: undefined, // 全てのファイルタイプを許可
           addRandomSuffix: false,
-          tokenPayload: JSON.stringify({ pathname }),
         };
       },
-      onUploadCompleted: async () => {},
+      onUploadCompleted: async () => {
+        // アップロード完了時の処理（特になし）
+      },
     });
 
     return NextResponse.json(jsonResponse);
